@@ -1,12 +1,19 @@
-import React from 'react';
+export default async function StudentDashboardHome({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params; // ✅ Next.js 15 safe
 
-export default function DummyPage() {
-    return (
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold">
+        Welcome, {slug}
+      </h2>
 
-        <main className="flex-grow flex flex-col items-center justify-center text-center px-4">
-            <h2 className="text-5xl font-extrabold text-gray-900 mb-4">
-                Build something <span className="text-blue-600">amazing</span>.
-            </h2>
-        </main>
-    );
+      <p className="text-muted-foreground mt-2">
+        Select a section from the navbar to continue.
+      </p>
+    </div>
+  );
 }
