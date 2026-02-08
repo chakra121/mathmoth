@@ -53,58 +53,63 @@ const handler = NextAuth({
     strategy: "jwt",
   },
 
-callbacks: {
-  async jwt({ token, user, account }) {
-    if (account?.provider === "google" && user) {
-      const res = await fetch(`${BACKEND_URL}/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: user.name,
-          email: user.email,
-        }),
-      });
+  callbacks: {
+    async jwt({ token, user, account }) {
+      if (account?.provider === "google" && user) {
+        const res = await fetch(`${BACKEND_URL}/auth/google`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: user.name,
+            email: user.email,
+          }),
+        });
 
-      const dbUser = await res.json();
+        if (!res.ok) {
+          // 🔥 prevents JSON parse crash
+          console.error("Backend Google auth failed");
+          throw new Error("Backend Google auth failed");
+        }
 
-      token.id = dbUser.id;
-      token.role = dbUser.role;
-      token.slug = dbUser.slug;
-    }
+        const dbUser = await res.json();
 
-    if (user && !token.role) {
-      token.id = user.id;
-      token.role = (user as { role?: string }).role;
-      token.slug = (user as { slug?: string }).slug;
-    }
+        token.id = dbUser.id;
+        token.role = dbUser.role;
+        token.slug = dbUser.slug;
+      }
 
-    return token;
+      if (user && !token.role) {
+        token.id = user.id;
+        token.role = (user as { role?: string }).role;
+        token.slug = (user as { slug?: string }).slug;
+      }
+
+      return token;
+    },
+
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.slug = token.slug as string;
+      }
+      return session;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // allow relative callbackUrls like /dashboard
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+
+      // allow same-origin absolute URLs
+      if (new URL(url).origin === baseUrl) return url;
+
+      // fallback
+      return baseUrl;
+    },
   },
-
-  async session({ session, token }) {
-    if (session.user) {
-      session.user.id = token.id as string;
-      session.user.role = token.role as string;
-      session.user.slug = token.slug as string;
-    }
-    return session;
-  },
-
-async redirect({ url, baseUrl }) {
-  // allow relative callbackUrls like /dashboard
-  if (url.startsWith("/")) return `${baseUrl}${url}`;
-
-  // allow same-origin absolute URLs
-  if (new URL(url).origin === baseUrl) return url;
-
-  // fallback
-  return baseUrl;
-},
-
-},
 
   pages: {
-    signIn: "/"
+    signIn: "/",
   },
 
   secret: process.env.NEXTAUTH_SECRET,
