@@ -1,14 +1,14 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
+from pymongo import MongoClient  # type: ignore
 import os
 
-load_dotenv()
-
-MONGO_URI = os.getenv("MONGO_URI")
-DATABASE_NAME = os.getenv("DATABASE_NAME")
-
-client = MongoClient(MONGO_URI)
-db = client[DATABASE_NAME]
+_client = None
 
 def get_db():
-    return db
+    global _client
+    if _client is None:
+        uri = os.environ.get("MONGODB_URI")
+        if not uri:
+            raise RuntimeError("MONGODB_URI not set")
+
+        _client = MongoClient(uri)
+    return _client["mathmoth"]

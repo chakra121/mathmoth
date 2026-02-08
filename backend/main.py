@@ -11,7 +11,7 @@ from routes.admin_reports import router as admin_reports_router
 from routes.health import router as health_router
 from routes.admin_passwords import router as admin_passwords_router
 
-app = FastAPI(title="Mathmoth API")
+app = FastAPI()
 app.include_router(auth_router)
 app.include_router(admin_tests_router)
 app.include_router(admin_questions_router)
@@ -32,10 +32,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/")
-def root():
-    return {"message": "Mathmoth backend is running 🚀"}
 
 @app.get("/test-db")
 def test_db():
