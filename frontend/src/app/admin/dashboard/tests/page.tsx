@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 type Test = {
+  question_count: number;
   id: string;
   title: string;
   duration: number;
@@ -78,7 +79,7 @@ export default function AdminTestsPage() {
    );
    if (!ok) return;
 
-   await fetch(`${API_BASE}/admin/tests/delete/${id}`, {
+   await fetch(`${API_BASE}/admin/tests/${id}`, {
      method: "DELETE",
    });
 
@@ -178,18 +179,13 @@ export default function AdminTestsPage() {
             </Link>
 
             <Button
-              variant="secondary"
+              disabled={test.question_count === 0}
               onClick={() => toggleStatus(test)}
             >
-              {test.status === "published"
-                ? "Move to Draft"
-                : "Publish"}
+              {test.status === "published" ? "Move to Draft" : "Publish"}
             </Button>
 
-            <Button
-              variant="destructive"
-              onClick={() => deleteTest(test.id)}
-            >
+            <Button variant="destructive" onClick={() => deleteTest(test.id)}>
               Delete
             </Button>
           </div>

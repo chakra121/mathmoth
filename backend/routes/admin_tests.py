@@ -116,25 +116,18 @@ def unpublish_test(test_id: str, _: dict = Body(default={})):
 
     return {"message": "Test moved to draft"}
 
-@router.delete("delete/{test_id}")
+@router.delete("/{test_id}")
 def delete_test(test_id: str):
     db = get_db()
-
     oid = ObjectId(test_id)
 
-    # delete answers
     db.submission_answers.delete_many({"test_id": oid})
-
-    # delete submissions
     db.submissions.delete_many({"test_id": oid})
-
-    # delete questions
     db.questions.delete_many({"test_id": oid})
 
-    # delete test
     result = db.tests.delete_one({"_id": oid})
 
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Test not found")
 
-    return {"message": "Test and related data deleted"}
+    return {"message": "Test deleted"}

@@ -46,7 +46,7 @@ async function toggleStatus() {
   async function deleteTest() {
     "use server";
 
-    await fetch(`${API_BASE}/admin/tests/delete/${testId}`, {
+    await fetch(`${API_BASE}/admin/tests/${testId}`, {
       method: "DELETE",
       cache: "no-store",
     });
