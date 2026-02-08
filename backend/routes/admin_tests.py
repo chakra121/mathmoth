@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from bson import ObjectId
 from datetime import datetime
 
@@ -73,7 +73,7 @@ def update_test(test_id: str, payload: TestCreateSchema):
     return {"message": "Test updated"}
 
 @router.patch("/{test_id}/publish")
-def publish_test(test_id: str):
+def publish_test(test_id: str, _: dict = Body(default={})):
     db = get_db()
 
     question_count = db.questions.count_documents(
@@ -86,7 +86,7 @@ def publish_test(test_id: str):
             detail="Cannot publish test without questions",
         )
 
-    db.tests.update_one(
+    result = db.tests.update_one(
         {"_id": ObjectId(test_id)},
         {"$set": {
             "status": "published",
@@ -94,10 +94,13 @@ def publish_test(test_id: str):
         }},
     )
 
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Test not found")
+
     return {"message": "Test published"}
 
 @router.patch("/{test_id}/draft")
-def unpublish_test(test_id: str):
+def unpublish_test(test_id: str, _: dict = Body(default={})):
     db = get_db()
 
     result = db.tests.update_one(
@@ -113,53 +116,25 @@ def unpublish_test(test_id: str):
 
     return {"message": "Test moved to draft"}
 
-@router.delete("/delete/{test_id}")
-def delete_test_cascade(test_id: str):
+@router.delete("delete/{test_id}")
+def delete_test(test_id: str):
     db = get_db()
 
-    test_oid = ObjectId(test_id)
+    oid = ObjectId(test_id)
 
-    # 1️⃣ Ensure test exists
-    test = db.tests.find_one({"_id": test_oid})
-    if not test:
+    # delete answers
+    db.submission_answers.delete_many({"test_id": oid})
+
+    # delete submissions
+    db.submissions.delete_many({"test_id": oid})
+
+    # delete questions
+    db.questions.delete_many({"test_id": oid})
+
+    # delete test
+    result = db.tests.delete_one({"_id": oid})
+
+    if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Test not found")
 
-    # 2️⃣ Find all submissions for this test
-    submissions = list(
-        db.submissions.find(
-            {"test_id": test_oid},
-            {"_id": 1}
-        )
-    )
-    submission_ids = [s["_id"] for s in submissions]
-
-    # 3️⃣ Delete submission answers
-    if submission_ids:
-        db.submission_answers.delete_many(
-            {"submission_id": {"$in": submission_ids}}
-        )
-
-    # 4️⃣ Delete submissions
-    db.submissions.delete_many(
-        {"test_id": test_oid}
-    )
-
-    # 5️⃣ Delete questions
-    db.questions.delete_many(
-        {"test_id": test_oid}
-    )
-
-    # 6️⃣ Delete test
-    db.tests.delete_one(
-        {"_id": test_oid}
-    )
-
-    return {
-        "message": "Test and all related data deleted successfully",
-        "deleted": {
-            "test": 1,
-            "questions": "all",
-            "submissions": len(submission_ids),
-            "submission_answers": "all related",
-        },
-    }
+    return {"message": "Test and related data deleted"}

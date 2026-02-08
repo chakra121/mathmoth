@@ -37,15 +37,21 @@ export default function AdminTestsPage() {
     setTests(data);
   }
 
-  async function toggleStatus(test: Test) {
-    const endpoint =
-      test.status === "draft"
-        ? `${API_BASE}/admin/tests/${test.id}/publish`
-        : `${API_BASE}/admin/tests/${test.id}/draft`;
+ async function toggleStatus(test: Test) {
+   const endpoint =
+     test.status === "draft"
+       ? `${API_BASE}/admin/tests/${test.id}/publish`
+       : `${API_BASE}/admin/tests/${test.id}/draft`;
 
-    await fetch(endpoint, { method: "PATCH" });
-    fetchTests();
-  }
+   await fetch(endpoint, {
+     method: "PATCH",
+     headers: {
+       "Content-Type": "application/json",
+     },
+   });
+
+   fetchTests();
+ }
 
   async function createTest() {
     const res = await fetch(`${API_BASE}/admin/tests`, {
@@ -66,18 +72,18 @@ export default function AdminTestsPage() {
     window.location.href = `/admin/dashboard/tests/${data.id}`;
   }
 
-  async function deleteTest(id: string) {
-    const ok = confirm(
-      "This will permanently delete the test, questions, and submissions. Continue?"
-    );
-    if (!ok) return;
+ async function deleteTest(id: string) {
+   const ok = confirm(
+     "This will permanently delete the test, questions, and submissions. Continue?",
+   );
+   if (!ok) return;
 
-    await fetch(`${API_BASE}/admin/tests/delete/${id}`, {
-      method: "DELETE",
-    });
+   await fetch(`${API_BASE}/admin/tests/delete/${id}`, {
+     method: "DELETE",
+   });
 
-    fetchTests();
-  }
+   fetchTests();
+ }
 
   /* ---------------- Effects ---------------- */
   useEffect(() => {

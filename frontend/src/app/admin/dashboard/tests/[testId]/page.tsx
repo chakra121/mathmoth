@@ -23,17 +23,24 @@ export default async function TestDetailPage({
   const test = await res.json();
 
   /* ---------------- Toggle Publish / Draft ---------------- */
-  async function toggleStatus() {
-    "use server";
+async function toggleStatus() {
+  "use server";
 
-    const endpoint =
-      test.status === "draft"
-        ? `${API_BASE}/admin/tests/${testId}/publish`
-        : `${API_BASE}/admin/tests/${testId}/draft`;
+  const endpoint =
+    test.status === "draft"
+      ? `${API_BASE}/admin/tests/${testId}/publish`
+      : `${API_BASE}/admin/tests/${testId}/draft`;
 
-    await fetch(endpoint, { method: "PATCH" });
-    revalidatePath(`/admin/dashboard/tests/${testId}`);
-  }
+  await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  revalidatePath(`/admin/dashboard/tests/${testId}`);
+}
 
   /* ---------------- Delete Test (Cascade) ---------------- */
   async function deleteTest() {
@@ -41,6 +48,7 @@ export default async function TestDetailPage({
 
     await fetch(`${API_BASE}/admin/tests/delete/${testId}`, {
       method: "DELETE",
+      cache: "no-store",
     });
 
     revalidatePath("/admin/dashboard/tests");
