@@ -25,7 +25,7 @@ export function QuestionView({
   const multiple = question.question_type === "multiple";
 
   return (
-    <div className="space-y-6">
+    <div className="max-h-screen space-y-6">
       <h1 className="text-2xl font-semibold">Question {question.order}</h1>
       <h2 className="text-xl font-semibold">
         {question.question_text}

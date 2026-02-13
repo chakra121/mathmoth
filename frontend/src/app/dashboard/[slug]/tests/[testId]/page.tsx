@@ -8,28 +8,41 @@ import { PreCheckScreen } from "@/components/student-test/PreCheckScreen";
 import { QuestionNavigator } from "@/components/student-test/QuestionNavigator";
 import { QuestionView } from "@/components/student-test/QuestionView";
 import { TimerBar } from "@/components/student-test/TimerBar";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+
+interface Question {
+  id: string;
+  question_type: "multiple" | string;
+  order: number;
+  question_text: string;
+  options: string[];
+  [key: string]: unknown;
+}
+
+interface Test {
+  questions: Question[];
+  duration: number;
+  [key: string]: unknown;
+}
 
 export default function StudentTestAttempt({
   params,
 }: {
   params: Promise<{ testId: string }>;
 }) {
-  // ✅ FIX HERE
   const { testId } = use(params);
-
   const { data: session } = useSession();
 
   const [ready, setReady] = useState(false);
-  const [test, setTest] = useState<{ questions: Array<{ id: string; question_type: string; order: number; question_text: string; options: string[] }>; duration: number } | null>(null);
+  const [test, setTest] = useState<Test | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number[]>>({});
+  const [visited, setVisited] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
   const [warn, setWarn] = useState(false);
 
-  /* fetch test after pre-check */
+  /* Fetch test */
   useEffect(() => {
     if (!ready) return;
 
@@ -41,7 +54,14 @@ export default function StudentTestAttempt({
       });
   }, [ready, testId]);
 
-  /* timer */
+  /* Track visited */
+  useEffect(() => {
+    if (!visited.includes(index)) {
+      setVisited((prev) => [...prev, index]);
+    }
+  }, [index, visited]);
+
+  /* Timer */
   useEffect(() => {
     if (!ready || timeLeft <= 0) return;
 
@@ -65,26 +85,27 @@ export default function StudentTestAttempt({
     window.location.href = `/dashboard/${session?.user?.slug}/submissions`;
   }
 
-  if (!ready) {
-    return <PreCheckScreen onReady={() => setReady(true)} />;
-  }
-
+  if (!ready) return <PreCheckScreen onReady={() => setReady(true)} />;
   if (!test) return null;
 
   const question = test.questions[index];
 
+  const answeredIndexes = Object.keys(answers).map((qid) =>
+    test.questions.findIndex((q: Question) => q.id === qid),
+  );
+
   return (
-    <div className=" flex">
+    <div className=" min-h-screen flex">
       <QuestionNavigator
         total={test.questions.length}
         current={index}
-        answered={Object.keys(answers).map((qid) =>
-          test.questions.findIndex((q: { id: string; question_type: string; [key: string]: unknown }) => q.id === qid),
-        )}
+        answered={answeredIndexes}
+        visited={visited}
         onSelect={setIndex}
+        onSubmit={submit}
       />
 
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div className="flex-1 p-8">
         <TimerBar
           timeLeft={timeLeft}
           onWarn={() => setWarn(true)}
@@ -113,15 +134,11 @@ export default function StudentTestAttempt({
             })
           }
         />
-
-        <Button className="mt-8" onClick={submit}>
-          Submit Test
-        </Button>
       </div>
 
+      {/* Warning Dialog */}
       <Dialog open={warn} onOpenChange={setWarn}>
-        <DialogContent className="max-w-sm">
-          {/* Accessibility-required title */}
+        <DialogContent>
           <VisuallyHidden>
             <DialogTitle>Time Warning</DialogTitle>
           </VisuallyHidden>
@@ -132,17 +149,8 @@ export default function StudentTestAttempt({
             </p>
 
             <p className="text-sm text-muted-foreground">
-              Your test will be auto-submitted when time runs out.
+              Your test will auto-submit when time runs out.
             </p>
-
-            {/* Explicit close button (best UX) */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setWarn(false)}
-            >
-              Continue Test
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

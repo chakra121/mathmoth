@@ -17,8 +17,8 @@ export function TimerBar({
   }, [onTimeout, onWarn, timeLeft]);
 
   return (
-    <div className="fixed top-4 right-6 font-mono text-2xl">
-      ⏱ {Math.floor(timeLeft / 60)}:
+    <div className="min-h-screen fixed top-4 right-6 font-mono text-2xl">
+      ⏱️ {Math.floor(timeLeft / 60)}:
       {(timeLeft % 60).toString().padStart(2, "0")}
     </div>
   );
